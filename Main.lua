@@ -1,103 +1,84 @@
---[[ 
-    MONAIM12-GOD ULTIMATE SYSTEM 💎
-    STABLE VERSION FOR DELTA / PC
-    FEATURES: MANUAL WEAPON, FLY, ANTI-LAG, AUTO-FARM
+--[[
+    MONAIM12-GOD ULTIMATE V4 💎
+    STABLE & FASTEST AUTO-FARM
+    FIXED: ATTACK NOT WORKING & LAG
 ]]
 
--- تحسين استدعاء المكتبة (Library Fix)
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("MONAIM12-GOD | BLOX FRUITS 🏴‍☠️", "DarkTheme")
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- // المتغيرات العالمية //
+local Window = Rayfield:CreateWindow({
+   Name = "MONAIM12-GOD | BLOX FRUITS V4 🏴‍☠️",
+   LoadingTitle = "تفعيل محرك التلفيل الأقصى...",
+   LoadingSubtitle = "بواسطة MONAIM12-GOD",
+   ConfigurationSaving = { Enabled = false }
+})
+
+-- // المتغيرات //
 _G.AutoFarm = false
-_G.SelectedWeapon = "Melee"
-_G.FlySpeed = 100
-_G.SafeMode = true
+_G.Weapon = "Melee"
 
--- // التبويب الأول: التلفيل //
-local FarmTab = Window:NewTab("Auto Farm 🚜")
-local FarmSection = FarmTab:NewSection("Main Farm Settings")
+-- // تبويب التلفيل //
+local MainTab = Window:CreateTab("Auto Farm 🚜", 4483362458)
 
-FarmSection:NewDropdown("Choose Your Weapon", "اختر السلاح الذي تحمله حالياً", {"Melee", "Sword", "Blox Fruit", "Gun"}, function(v)
-    _G.SelectedWeapon = v
-end)
+MainTab:CreateDropdown({
+   Name = "Select Weapon (اختر السلاح)",
+   Options = {"Melee", "Sword", "Blox Fruit"},
+   CurrentOption = "Melee",
+   Callback = function(Option)
+      _G.Weapon = Option
+   end,
+})
 
-FarmSection:NewToggle("Start Auto Farm", "تفعيل التلفيل التلقائي", function(state)
-    _G.AutoFarm = state
-    
-    if state then
-        spawn(function()
-            while _G.AutoFarm do
-                task.wait(0.1)
-                pcall(function()
-                    local player = game.Players.LocalPlayer
-                    local char = player.Character
-                    
-                    -- تجهيز السلاح المختار
-                    local tool = player.Backpack:FindFirstChild(_G.SelectedWeapon) or char:FindFirstChild(_G.SelectedWeapon)
-                    if tool and not char:FindFirstChild(tool.Name) then
-                        char.Humanoid:EquipTool(tool)
+MainTab:CreateToggle({
+   Name = "Turbo Auto Farm (التلفيل السريع)",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.AutoFarm = Value
+      spawn(function()
+         while _G.AutoFarm do
+            task.wait()
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                local char = player.Character
+                
+                -- تجهيز السلاح
+                local tool = player.Backpack:FindFirstChild(_G.Weapon) or char:FindFirstChild(_G.Weapon)
+                if tool and not char:FindFirstChild(tool.Name) then
+                    char.Humanoid:EquipTool(tool)
+                end
+
+                -- البحث عن وحش قريب والضرب
+                for _, v in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        repeat
+                            if not _G.AutoFarm then break end
+                            task.wait()
+                            
+                            -- حركة "الرقصة القاتلة" لمنع الباند ولضمان استمرار الضرب
+                            char.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                            
+                            -- تنفيذ الهجوم المباشر
+                            game:GetService("VirtualUser"):CaptureController()
+                            game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+                        until v.Humanoid.Health <= 0 or not _G.AutoFarm
                     end
-                    
-                    -- البحث عن الأعداء
-                    for _, v in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
-                        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                            repeat
-                                if not _G.AutoFarm then break end
-                                task.wait()
-                                -- نظام الارتفاع الآمن للحماية من الباند
-                                local offset = _G.SafeMode and Vector3.new(0, 22, 0) or Vector3.new(0, 0, 5)
-                                char.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(offset)
-                                
-                                -- محاكة الضرب
-                                game:GetService("VirtualUser"):CaptureController()
-                                game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
-                            until v.Humanoid.Health <= 0 or not _G.AutoFarm
-                        end
-                    end
-                end)
-            end
-        end)
-    end
-end)
+                end
+            end)
+         end
+      end)
+   end,
+})
 
--- // التبويب الثاني: الحركة والطيران //
-local MoveTab = Window:NewTab("Movement ⚡")
-local MoveSection = MoveTab:NewSection("Flight Controls")
+-- // تبويب الحركة //
+local MoveTab = Window:CreateTab("Movement ⚡", 4483362458)
 
-MoveSection:NewSlider("Flight Speed", "تحكم في سرعة الطيران", 500, 50, function(s)
-    _G.FlySpeed = s
-end)
-
-MoveSection:NewToggle("Toggle Fly", "تفعيل/تعطيل الطيران", function(state)
-    _G.Flying = state
-    local lp = game.Players.LocalPlayer
-    if state then
-        local bv = Instance.new("BodyVelocity", lp.Character.HumanoidRootPart)
-        bv.Name = "GodFly"
-        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-        spawn(function()
-            while _G.Flying do
-                task.wait()
-                bv.velocity = lp.Character.Humanoid.MoveDirection * _G.FlySpeed
-            end
-            bv:Destroy()
-        end)
-    end
-end)
-
--- // التبويب الثالث: الأداء والحماية //
-local SettingTab = Window:NewTab("Settings ⚙️")
-local SetSection = SettingTab:NewSection("Optimization")
-
-SetSection:NewToggle("Safe Mode (Anti-Ban)", "الحماية من رصد السيرفر", function(v)
-    _G.SafeMode = v
-end)
-
-SetSection:NewButton("Fix Lag (Boost FPS)", "إزالة المؤثرات لزيادة السرعة", function()
-    for _, v in pairs(game:GetDescendants()) do
-        if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end
-        if v:IsA("ParticleEmitter") or v:IsA("Trail") then v.Enabled = false end
-    end
-    settings().Rendering.QualityLevel = 1
-end)
+MoveTab:CreateButton({
+   Name = "Enable Anti-Lag (مسح اللاغ)",
+   Callback = function()
+       for _, v in pairs(game:GetDescendants()) do
+           if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end
+           if v:IsA("ParticleEmitter") or v:IsA("Trail") then v.Enabled = false end
+       end
+       settings().Rendering.QualityLevel = 1
+   end,
+})
